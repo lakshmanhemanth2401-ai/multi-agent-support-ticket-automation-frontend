@@ -1,11 +1,33 @@
-import { ArrowLeft, Calendar, UserRound } from 'lucide-react'
+import axios from 'axios'
+import { ArrowLeft, Calendar, RefreshCw, Tag } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AIAnalysisPanel } from '../../components/tickets/AIAnalysisPanel'
+import { AuditTrail } from '../../components/tickets/AuditTrail'
+import { Button } from '../../components/common/Button'
 import { Card } from '../../components/common/Card'
+import { ErrorState } from '../../components/common/ErrorState'
+import { Loading } from '../../components/common/Loading'
 import { PriorityBadge, StatusBadge } from '../../components/tickets/TicketBadges'
-import { mockTickets } from '../../constants/mockData'
+import { getTicket } from '../../services/endpoints/tickets'
+import type { Ticket } from '../../types/ticket'
 
 export function TicketDetailsPage() {
-  const { ticketId } = useParams()
-  const ticket = mockTickets.find((item) => item.id === ticketId)
-  return <div className="mx-auto max-w-5xl"><Link to="/tickets" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800"><ArrowLeft className="h-4 w-4" />Back to tickets</Link><Card className="p-6 sm:p-8">{ticket ? <><div className="flex flex-col justify-between gap-5 border-b pb-6 sm:flex-row sm:items-start"><div><p className="text-sm font-bold text-brand-600">{ticket.id}</p><h1 className="mt-2 text-2xl font-extrabold text-ink">{ticket.subject}</h1><div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div></div><div className="text-sm text-slate-500"><p className="flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(ticket.createdAt).toLocaleString()}</p><p className="mt-2 flex items-center gap-2"><UserRound className="h-4 w-4" />{ticket.assignee}</p></div></div><div className="grid gap-8 py-7 md:grid-cols-[1fr_260px]"><div><h2 className="font-bold text-ink">Description</h2><p className="mt-3 text-sm leading-7 text-slate-600">{ticket.description}</p></div><aside className="rounded-xl bg-slate-50 p-5"><h2 className="text-sm font-bold text-ink">Customer</h2><p className="mt-3 text-sm font-semibold text-slate-700">{ticket.customer}</p><p className="mt-1 text-xs text-slate-500">{ticket.customerEmail}</p><p className="mt-5 text-xs font-bold uppercase tracking-wide text-slate-400">Category</p><p className="mt-1 text-sm font-semibold text-slate-700">{ticket.category}</p></aside></div></> : <div className="py-12 text-center"><p className="text-2xl font-extrabold text-ink">Ticket {ticketId}</p><p className="mt-2 text-sm text-slate-500">This is a placeholder details view. Backend ticket data will appear here after creation.</p></div>}</Card></div>
+  const { ticketId = '' } = useParams()
+  const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState('')
+  const loadTicket = useCallback(async (refresh = false) => {
+    if (refresh) setRefreshing(true)
+    else setLoading(true)
+    setError('')
+    try { setTicket(await getTicket(ticketId)) }
+    catch (requestError) { setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'Unable to load this ticket.') }
+    finally { setLoading(false); setRefreshing(false) }
+  }, [ticketId])
+  useEffect(() => { void loadTicket() }, [loadTicket])
+  if (loading) return <Loading fullPage label="Loading ticket details…" />
+  if (error || !ticket) return <Card className="mx-auto max-w-4xl"><ErrorState title="Ticket unavailable" message={error || 'The ticket was not found.'} onRetry={() => void loadTicket()} /></Card>
+  return <div className="mx-auto max-w-5xl space-y-6"><div className="flex items-center justify-between"><Link to="/tickets" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800"><ArrowLeft className="h-4 w-4" />Back to tickets</Link><Button variant="secondary" loading={refreshing} icon={<RefreshCw className="h-4 w-4" />} onClick={() => void loadTicket(true)}>Refresh</Button></div><Card className="p-6 sm:p-8"><div className="flex flex-col justify-between gap-5 border-b pb-6 sm:flex-row sm:items-start"><div><p className="text-sm font-bold text-brand-600">Ticket #{ticket.id}</p><h1 className="mt-2 text-2xl font-extrabold text-ink">{ticket.title}</h1><div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div></div><div className="text-sm text-slate-500"><p className="flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(ticket.createdAt).toLocaleString()}</p><p className="mt-2 flex items-center gap-2"><Tag className="h-4 w-4" />{ticket.category || 'Uncategorized'}</p></div></div><section className="py-7"><h2 className="font-bold text-ink">Description</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-600">{ticket.description}</p></section></Card><AIAnalysisPanel ticketId={ticketId} /><AuditTrail ticketId={ticketId} /></div>
 }

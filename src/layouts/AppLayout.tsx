@@ -1,4 +1,4 @@
-import { Bell, Bot, ChevronDown, CircleGauge, FileCheck2, Menu, Plus, Search, Ticket, X } from 'lucide-react'
+import { Bell, Bot, BookOpenText, ChevronDown, CircleGauge, FileCheck2, Menu, Plus, Search, Ticket, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Button } from '../components/common/Button'
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: CircleGauge },
   { to: '/tickets', label: 'Tickets', icon: Ticket },
   { to: '/reviews', label: 'Reviews', icon: FileCheck2 },
+  { to: '/knowledge', label: 'Knowledge Base', icon: BookOpenText },
 ]
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
