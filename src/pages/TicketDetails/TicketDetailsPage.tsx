@@ -1,0 +1,11 @@
+import { ArrowLeft, Calendar, UserRound } from 'lucide-react'
+import { Link, useParams } from 'react-router-dom'
+import { Card } from '../../components/common/Card'
+import { PriorityBadge, StatusBadge } from '../../components/tickets/TicketBadges'
+import { mockTickets } from '../../constants/mockData'
+
+export function TicketDetailsPage() {
+  const { ticketId } = useParams()
+  const ticket = mockTickets.find((item) => item.id === ticketId)
+  return <div className="mx-auto max-w-5xl"><Link to="/tickets" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800"><ArrowLeft className="h-4 w-4" />Back to tickets</Link><Card className="p-6 sm:p-8">{ticket ? <><div className="flex flex-col justify-between gap-5 border-b pb-6 sm:flex-row sm:items-start"><div><p className="text-sm font-bold text-brand-600">{ticket.id}</p><h1 className="mt-2 text-2xl font-extrabold text-ink">{ticket.subject}</h1><div className="mt-4 flex flex-wrap gap-2"><PriorityBadge priority={ticket.priority} /><StatusBadge status={ticket.status} /></div></div><div className="text-sm text-slate-500"><p className="flex items-center gap-2"><Calendar className="h-4 w-4" />{new Date(ticket.createdAt).toLocaleString()}</p><p className="mt-2 flex items-center gap-2"><UserRound className="h-4 w-4" />{ticket.assignee}</p></div></div><div className="grid gap-8 py-7 md:grid-cols-[1fr_260px]"><div><h2 className="font-bold text-ink">Description</h2><p className="mt-3 text-sm leading-7 text-slate-600">{ticket.description}</p></div><aside className="rounded-xl bg-slate-50 p-5"><h2 className="text-sm font-bold text-ink">Customer</h2><p className="mt-3 text-sm font-semibold text-slate-700">{ticket.customer}</p><p className="mt-1 text-xs text-slate-500">{ticket.customerEmail}</p><p className="mt-5 text-xs font-bold uppercase tracking-wide text-slate-400">Category</p><p className="mt-1 text-sm font-semibold text-slate-700">{ticket.category}</p></aside></div></> : <div className="py-12 text-center"><p className="text-2xl font-extrabold text-ink">Ticket {ticketId}</p><p className="mt-2 text-sm text-slate-500">This is a placeholder details view. Backend ticket data will appear here after creation.</p></div>}</Card></div>
+}
