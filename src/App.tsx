@@ -3,6 +3,7 @@ import { AppLayout } from './layouts/AppLayout'
 import { CreateTicketPage } from './pages/CreateTicket/CreateTicketPage'
 import { DashboardPage } from './pages/Dashboard/DashboardPage'
 import { KnowledgeBasePage } from './pages/KnowledgeBase/KnowledgeBasePage'
+import { MonitoringPage } from './pages/Monitoring/MonitoringPage'
 import { ReviewDetailsPage } from './pages/ReviewDetails/ReviewDetailsPage'
 import { ReviewsPage } from './pages/Reviews/ReviewsPage'
 import { TicketDetailsPage } from './pages/TicketDetails/TicketDetailsPage'
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="reviews/:reviewId" element={<ReviewDetailsPage />} />
         <Route path="knowledge" element={<KnowledgeBasePage />} />
+        <Route path="monitoring" element={<MonitoringPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

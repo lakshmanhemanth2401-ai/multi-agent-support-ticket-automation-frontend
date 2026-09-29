@@ -15,7 +15,7 @@ const filters: Array<{ label: string; value: ReviewStatus | 'all' }> = [{ label:
 
 export function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([])
-  const [filter, setFilter] = useState<ReviewStatus | 'all'>('all')
+  const [filter, setFilter] = useState<ReviewStatus | 'all'>('pending')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -24,10 +24,10 @@ export function ReviewsPage() {
     if (refresh) setRefreshing(true)
     else setLoading(true)
     setError('')
-    try { setReviews(await listReviews()) }
+    try { setReviews(await listReviews(filter === 'all' ? undefined : filter)) }
     catch (requestError) { setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'Unable to load reviews.') }
     finally { setLoading(false); setRefreshing(false) }
-  }, [])
+  }, [filter])
   useEffect(() => { void load() }, [load])
   const visible = useMemo(() => reviews.filter((review) => (filter === 'all' || review.status === filter) && `${review.id} ${review.ticketId} ${review.generatedSubject ?? ''}`.toLowerCase().includes(query.toLowerCase())), [filter, query, reviews])
   const pendingCount = reviews.filter((review) => review.status === 'pending').length
