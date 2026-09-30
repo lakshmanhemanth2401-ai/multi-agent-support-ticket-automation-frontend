@@ -108,6 +108,7 @@ Open `http://localhost:5173`. Start the backend separately on the host and port 
 npm run dev          # Vite development server
 npm run lint         # ESLint with zero allowed warnings
 npm test             # Complete Vitest suite (single run)
+npm run test:coverage # Test suite with a coverage report
 npm run test:watch   # Interactive test watch mode
 npm run build        # TypeScript project build and optimized Vite bundle
 npm run preview      # Serve the production bundle locally
@@ -115,6 +116,8 @@ npm run check        # Lint, test, and production build
 ```
 
 Tests use Vitest, jsdom, React Testing Library, and user-event. API modules are mocked in component tests so validation, ticket display, review actions, and loading/error states remain deterministic.
+
+CI enforces baseline coverage thresholds of 65% statements, 55% branches, 50% functions, and 70% lines. Ticket and review lists paginate locally in groups of ten because the current backend returns unpaginated arrays; move pagination to API parameters when the backend exposes a paginated contract.
 
 ## Production build
 
@@ -129,7 +132,14 @@ The optimized output is written to `dist/`. Deploy that directory through a stat
 
 ## Docker
 
-This repository does not currently include a frontend `Dockerfile` or Compose service. Run the frontend locally with Vite or deploy `dist/` to a static web server. If containerization is added later, use a multi-stage Node build, serve `dist/` from a small static server, provide SPA fallback routing, and set `VITE_API_BASE_URL` during the build. Do not copy `.env.local` or secrets into the image.
+The included multi-stage `Dockerfile` builds the application with Node and serves the static bundle from unprivileged port `8080` through Nginx. The Nginx configuration includes SPA fallback routing, immutable asset caching, and `/healthz`.
+
+```powershell
+docker build --build-arg VITE_API_BASE_URL=http://host.docker.internal:8000/api/v1 -t supportflow-frontend .
+docker run --rm -p 8080:8080 supportflow-frontend
+```
+
+Open `http://localhost:8080` and check `http://localhost:8080/healthz` for container health. The API URL is embedded at build time; rebuild the image when it changes. `.dockerignore` excludes local environment files, dependencies, build output, and Git metadata.
 
 ## Complete demo flow
 
@@ -153,3 +163,4 @@ This repository does not currently include a frontend `Dockerfile` or Compose se
 - **Direct route returns a server 404 after deployment:** Configure the static host to serve `index.html` as the SPA fallback.
 - **Environment change is ignored:** Stop and restart the Vite process; values are loaded when the development server starts or the production bundle is built.
 - **Clean-install mismatch:** Use `npm ci` with the committed lockfile rather than updating individual packages during setup.
+- **Authentication:** The current backend contract has no authentication or authorization endpoints. Add login/session handling only after the backend defines its token, refresh, role, and `401`/`403` response contracts.

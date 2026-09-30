@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TicketsPage } from '../../src/pages/Tickets/TicketsPage'
@@ -23,5 +24,16 @@ describe('TicketsPage', () => {
     render(<MemoryRouter><TicketsPage /></MemoryRouter>)
     expect(await screen.findByText(/unexpected error occurred/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
+  })
+
+  it('paginates long ticket lists accessibly', async () => {
+    const user = userEvent.setup()
+    mockedListTickets.mockResolvedValue(Array.from({ length: 11 }, (_, index) => ({ id: index + 1, title: `Ticket ${index + 1}`, description: 'Description', status: 'open' as const, priority: 'medium' as const, category: 'general', createdAt: '2026-09-29T12:00:00Z' })))
+    render(<MemoryRouter><TicketsPage /></MemoryRouter>)
+    expect(await screen.findByText('Ticket 1')).toBeInTheDocument()
+    expect(screen.queryByText('Ticket 11')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /next tickets page/i }))
+    expect(screen.getByText('Ticket 11')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search tickets')).toBeInTheDocument()
   })
 })
