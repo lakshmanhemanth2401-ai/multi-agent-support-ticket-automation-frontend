@@ -1,5 +1,6 @@
 import { apiClient } from '../api/client'
 import type { AuditEvent } from '../../types/audit'
+import type { Page } from '../../types/pagination'
 
 interface AuditApiResponse {
   id: number
@@ -17,6 +18,6 @@ function safeDetails(details: Record<string, unknown> | null): AuditEvent['detai
 }
 
 export async function getTicketAudit(ticketId: string): Promise<AuditEvent[]> {
-  const { data } = await apiClient.get<AuditApiResponse[]>(`/tickets/${ticketId}/audit`)
-  return data.map((event) => ({ id: event.id, ticketId: event.ticket_id, action: event.action, details: safeDetails(event.details), createdAt: event.created_at })).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  const { data } = await apiClient.get<Page<AuditApiResponse>>(`/tickets/${ticketId}/audit`, { params: { offset: 0, limit: 100 } })
+  return data.items.map((event) => ({ id: event.id, ticketId: event.ticket_id, action: event.action, details: safeDetails(event.details), createdAt: event.created_at })).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 }

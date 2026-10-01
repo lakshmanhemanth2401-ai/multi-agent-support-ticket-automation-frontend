@@ -36,6 +36,8 @@ export interface WorkflowDetail {
   classification?: ClassificationResult | null
   knowledge?: KnowledgeSearchResult | null
   solution?: SolutionResult | null
+  confidence?: number
+  escalation_required?: boolean
 }
 
 export interface SubmitReviewPayload {

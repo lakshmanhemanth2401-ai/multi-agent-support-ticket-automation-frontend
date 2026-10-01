@@ -1,5 +1,7 @@
 import { apiClient } from '../api/client'
 import type { Review, ReviewStatus, SubmitReviewPayload, WorkflowDetail } from '../../types/review'
+import type { Page } from '../../types/pagination'
+import { normalizeWorkflow } from '../api/workflow'
 
 interface ReviewApiResponse {
   id: number
@@ -38,8 +40,8 @@ function normalizeReview(review: ReviewApiResponse): Review {
 }
 
 export async function listReviews(status?: ReviewStatus): Promise<Review[]> {
-  const { data } = await apiClient.get<ReviewApiResponse[]>('/reviews', { params: status ? { status } : undefined })
-  return data.map(normalizeReview)
+  const { data } = await apiClient.get<Page<ReviewApiResponse>>('/reviews', { params: { ...(status ? { status } : {}), offset: 0, limit: 100 } })
+  return data.items.map(normalizeReview)
 }
 
 export async function getReview(reviewId: string): Promise<Review> {
@@ -49,10 +51,10 @@ export async function getReview(reviewId: string): Promise<Review> {
 
 export async function getWorkflow(threadId: string): Promise<WorkflowDetail> {
   const { data } = await apiClient.get<WorkflowDetail>(`/workflows/${threadId}`)
-  return data
+  return normalizeWorkflow(data as never)
 }
 
 export async function submitReview(threadId: string, payload: SubmitReviewPayload): Promise<WorkflowDetail> {
   const { data } = await apiClient.post<WorkflowDetail>(`/workflows/${threadId}/review`, payload)
-  return data
+  return normalizeWorkflow(data as never)
 }

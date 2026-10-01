@@ -27,7 +27,7 @@ export interface ClassificationResult {
   category: string
   priority: TicketPriority
   confidence: number
-  reasoning_summary: string
+  reasoning_summary?: string
 }
 
 export interface KnowledgeChunk {

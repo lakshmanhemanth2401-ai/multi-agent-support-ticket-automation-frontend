@@ -14,6 +14,7 @@ src/
 │   ├── knowledge/    Document and search-result cards
 │   ├── reviews/      Review status presentation
 │   └── tickets/      Ticket badges, AI analysis, and audit trail
+├── contexts/         Authentication and session state
 ├── layouts/          Responsive application shell and navigation
 ├── pages/            Route-level screens
 ├── services/
@@ -31,14 +32,15 @@ tests/                Vitest and Testing Library tests
 
 | Route | Page | Purpose |
 | --- | --- | --- |
+| `/login` | Login | Authenticate with the backend |
 | `/dashboard` | Dashboard | Live ticket counts, status distribution, and recent tickets |
 | `/tickets` | Tickets | Search and refresh the backend ticket list |
 | `/tickets/new` | Create Ticket | Validate and submit a new ticket |
 | `/tickets/:ticketId` | Ticket Details | Ticket data, processing state, AI analysis, solution, response, and audit trail |
-| `/reviews` | Reviews | Pending and completed human reviews |
+| `/reviews` | Reviews | Reviewer/admin human-review queue |
 | `/reviews/:reviewId` | Review Details | Approve, reject, edit, or regenerate a drafted response |
 | `/knowledge` | Knowledge Base | List indexed documents and search retrieved chunks |
-| `/monitoring` | Monitoring | Service health, workflow, review, and agent metrics |
+| `/monitoring` | Monitoring | Administrator-only service and workflow metrics |
 
 The root and unknown routes redirect to `/dashboard`.
 
@@ -53,13 +55,26 @@ The root and unknown routes redirect to `/dashboard`.
 
 ## State management
 
-The frontend intentionally uses local React state, effects, callbacks, and memoized derived values. There is no global state library. Each route fetches the data it needs, exposes explicit refresh/retry actions, and renders loading, error, empty, and success states. React Router provides route parameters and navigation.
+Pages use local React state for request/UI state. `AuthProvider` owns the authenticated user and session lifecycle without adding a global-state dependency. React Router provides protected routes, role gates, route parameters, and navigation.
+
+## Authentication and roles
+
+The login page uses `/api/v1/auth/login`. The access token is kept only in memory; the rotating refresh token is scoped to `sessionStorage`, so it is removed when the browser tab session ends. The Axios client attaches bearer access tokens, performs one refresh-and-retry after a `401`, and clears the session if rotation fails. Logout revokes the refresh session through the backend.
+
+- `support_agent`: dashboard, tickets, workflows, and knowledge
+- `reviewer`: support-agent access plus reviews and audit history
+- `administrator`: all pages, including monitoring
+
+Navigation and routes enforce these roles. Backend authorization remains authoritative.
 
 ## API integration
 
 `src/services/api/client.ts` creates the shared Axios client. Endpoint modules convert backend snake-case payloads to frontend models where needed.
 
 The frontend calls:
+
+- `POST /api/v1/auth/login`, `/auth/refresh`, and `/auth/logout`
+- `GET /api/v1/auth/me`
 
 - `GET/POST /api/v1/tickets`
 - `GET /api/v1/tickets/:id`
@@ -109,6 +124,7 @@ npm run dev          # Vite development server
 npm run lint         # ESLint with zero allowed warnings
 npm test             # Complete Vitest suite (single run)
 npm run test:coverage # Test suite with a coverage report
+npm run test:e2e     # Playwright Chromium workflow tests
 npm run test:watch   # Interactive test watch mode
 npm run build        # TypeScript project build and optimized Vite bundle
 npm run preview      # Serve the production bundle locally
@@ -117,7 +133,7 @@ npm run check        # Lint, test, and production build
 
 Tests use Vitest, jsdom, React Testing Library, and user-event. API modules are mocked in component tests so validation, ticket display, review actions, and loading/error states remain deterministic.
 
-CI enforces baseline coverage thresholds of 65% statements, 55% branches, 50% functions, and 70% lines. Ticket and review lists paginate locally in groups of ten because the current backend returns unpaginated arrays; move pagination to API parameters when the backend exposes a paginated contract.
+CI enforces baseline coverage thresholds of 65% statements, 55% branches, 50% functions, and 70% lines. Endpoint adapters consume the backend `items` and `pagination` response envelope. Playwright uses deterministic API interception and does not alter production data.
 
 ## Production build
 
@@ -144,7 +160,7 @@ Open `http://localhost:8080` and check `http://localhost:8080/healthz` for conta
 ## Complete demo flow
 
 1. Start the backend and confirm `GET /health` succeeds.
-2. Start the frontend and open the Dashboard; confirm live ticket totals load.
+2. Start the frontend, sign in with a backend-created user, and confirm the role-appropriate navigation and Dashboard load.
 3. Open **Create ticket**, complete the required fields, and submit.
 4. Confirm navigation to Ticket Details and start or refresh processing.
 5. Inspect classification category, priority, confidence, retrieved sources, recommended solution, and troubleshooting steps.
@@ -158,9 +174,10 @@ Open `http://localhost:8080` and check `http://localhost:8080/healthz` for conta
 
 - **Backend unreachable:** Verify the backend is listening at `VITE_API_BASE_URL`, then restart Vite after changing `.env.local`.
 - **CORS error:** Add the exact frontend origin to the backend CORS configuration. `localhost` and `127.0.0.1` are different origins.
-- **Knowledge requests return 404:** The deployed backend must expose `/api/v1/knowledge/documents` and `/api/v1/knowledge/search`; these routes may not exist in older backend revisions.
+- **Sign-in fails:** Create a backend user with the backend CLI, verify `JWT_SECRET`, and confirm `/api/v1/auth/login` is reachable.
+- **Session expires repeatedly:** Check that `/api/v1/auth/refresh` accepts the rotating refresh token and that system clocks are synchronized.
+- **Knowledge requests return 404:** Deploy the backend revision that exposes `/api/v1/knowledge/documents` and `/api/v1/knowledge/search`.
 - **Monitoring fails while other pages work:** Monitoring additionally requires root-level `/health` and `/metrics` endpoints.
 - **Direct route returns a server 404 after deployment:** Configure the static host to serve `index.html` as the SPA fallback.
 - **Environment change is ignored:** Stop and restart the Vite process; values are loaded when the development server starts or the production bundle is built.
 - **Clean-install mismatch:** Use `npm ci` with the committed lockfile rather than updating individual packages during setup.
-- **Authentication:** The current backend contract has no authentication or authorization endpoints. Add login/session handling only after the backend defines its token, refresh, role, and `401`/`403` response contracts.

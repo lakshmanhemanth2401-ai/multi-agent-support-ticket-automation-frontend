@@ -44,13 +44,13 @@ function normalizeChunk(value: unknown): KnowledgeSearchChunk {
 export async function listKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
   const { data } = await apiClient.get<unknown>('/knowledge/documents')
   const payload = record(data)
-  const values = Array.isArray(data) ? data : Array.isArray(payload.documents) ? payload.documents : Array.isArray(payload.data) ? payload.data : []
+  const values = Array.isArray(payload.items) ? payload.items : []
   return values.map(normalizeDocument)
 }
 
 export async function searchKnowledge(query: string, topK = 5): Promise<KnowledgeSearchResponse> {
   const { data } = await apiClient.post<unknown>('/knowledge/search', { query, top_k: topK })
   const payload = record(data)
-  const values = Array.isArray(data) ? data : Array.isArray(payload.results) ? payload.results : Array.isArray(payload.chunks) ? payload.chunks : Array.isArray(payload.data) ? payload.data : []
+  const values = Array.isArray(payload.items) ? payload.items : []
   return { query: text(payload.query, query), results: values.map(normalizeChunk) }
 }

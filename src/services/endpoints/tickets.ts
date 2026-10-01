@@ -1,5 +1,8 @@
 import type { CreateTicketPayload, Ticket, TicketPriority, TicketStatus, WorkflowAnalysis } from '../../types/ticket'
 import { apiClient } from '../api/client'
+import type { Page } from '../../types/pagination'
+import { normalizeWorkflow } from '../api/workflow'
+import type { WorkflowDetail } from '../../types/review'
 
 interface TicketApiResponse {
   id: number
@@ -41,11 +44,11 @@ export async function getTicket(ticketId: string): Promise<Ticket> {
 }
 
 export async function listTickets(): Promise<Ticket[]> {
-  const { data } = await apiClient.get<TicketApiResponse[]>('/tickets')
-  return data.map(normalizeTicket)
+  const { data } = await apiClient.get<Page<TicketApiResponse>>('/tickets', { params: { offset: 0, limit: 100 } })
+  return data.items.map(normalizeTicket)
 }
 
 export async function runTicketAnalysis(ticketId: string): Promise<WorkflowAnalysis> {
-  const { data } = await apiClient.post<WorkflowAnalysis>(`/workflows/tickets/${ticketId}`)
-  return data
+  const { data } = await apiClient.post<WorkflowDetail>(`/workflows/tickets/${ticketId}`)
+  return normalizeWorkflow(data as never) as unknown as WorkflowAnalysis
 }
