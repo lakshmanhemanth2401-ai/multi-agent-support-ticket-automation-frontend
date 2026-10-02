@@ -2,6 +2,7 @@ import axios from 'axios'
 import { listReviews } from './reviews'
 import { listTickets } from './tickets'
 import type { MetricSample, MonitoringSnapshot } from '../../types/monitoring'
+import { currentAccessToken } from '../api/client'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
 const SERVICE_BASE = API_BASE.replace(/\/api\/v1\/?$/, '')
@@ -28,9 +29,11 @@ function average(samples: MetricSample[], prefix: string) {
 }
 
 export async function getMonitoringSnapshot(): Promise<MonitoringSnapshot> {
+  const token = currentAccessToken()
+  const protectedConfig = { timeout: 10_000, headers: token ? { Authorization: `Bearer ${token}` } : undefined }
   const [healthResponse, metricsResponse, tickets, reviews] = await Promise.all([
     axios.get<{ status: string; environment: string }>(`${SERVICE_BASE}/health`, { timeout: 10_000 }),
-    axios.get<string>(`${SERVICE_BASE}/metrics`, { timeout: 10_000, transformResponse: [(data) => data] }),
+    axios.get<string>(`${SERVICE_BASE}/metrics`, { ...protectedConfig, transformResponse: [(data) => data] }),
     listTickets(),
     listReviews(),
   ])

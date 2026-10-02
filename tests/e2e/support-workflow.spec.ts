@@ -24,6 +24,6 @@ test('login and ticket creation flow', async ({ page }) => {
   await page.getByLabel('Customer').fill('Example customer')
   await page.getByLabel('Category').selectOption({ label: 'Account' })
   await page.getByRole('button', { name: /create ticket/i }).click()
-  await expect(page.getByText('Ticket #42')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).getByText('Ticket #42')).toBeVisible()
   await expect(page.getByText('SSO returns an access error.')).toBeVisible()
 })

@@ -1,0 +1,4 @@
+import { cn } from '../../utils/cn'
+
+export function Skeleton({ className }: { className?: string }) { return <span aria-hidden="true" className={cn('block animate-pulse rounded-md bg-slate-200', className)} /> }
+export function PageSkeleton({ cards = 4 }: { cards?: number }) { return <div aria-busy="true" aria-label="Loading content" className="space-y-6"><div className="space-y-2"><Skeleton className="h-8 w-52" /><Skeleton className="h-4 w-80 max-w-full" /></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: cards }, (_, index) => <div key={index} className="rounded-xl border bg-white p-5"><Skeleton className="h-4 w-24" /><Skeleton className="mt-4 h-9 w-16" /><Skeleton className="mt-4 h-3 w-32" /></div>)}</div><div className="rounded-xl border bg-white p-6"><Skeleton className="h-5 w-40" />{Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="mt-5 h-12 w-full" />)}</div></div> }

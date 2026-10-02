@@ -11,6 +11,7 @@ import { TicketsPage } from './pages/Tickets/TicketsPage'
 import { LoginPage } from './pages/Login/LoginPage'
 import { AccessDeniedPage } from './pages/AccessDenied/AccessDeniedPage'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { NotFoundPage } from './pages/NotFound/NotFoundPage'
 
 export default function App() {
   return (
@@ -25,7 +26,7 @@ export default function App() {
         <Route path="tickets/:ticketId" element={<TicketDetailsPage />} />
         <Route path="knowledge" element={<KnowledgeBasePage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       </Route>
       <Route element={<ProtectedRoute roles={['reviewer', 'administrator']} />}><Route element={<AppLayout />}><Route path="reviews" element={<ReviewsPage />} /><Route path="reviews/:reviewId" element={<ReviewDetailsPage />} /></Route></Route>

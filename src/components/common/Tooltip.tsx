@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react'
+export function Tooltip({ label, children }: { label: string; children: ReactNode }) { return <span className="group relative inline-flex"><span aria-label={label} tabIndex={0}>{children}</span><span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-max max-w-56 -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-elevated group-hover:block group-focus-within:block">{label}</span></span> }

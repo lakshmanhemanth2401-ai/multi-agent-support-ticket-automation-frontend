@@ -6,13 +6,14 @@ import { Button } from '../../components/common/Button'
 import { Card } from '../../components/common/Card'
 import { EmptyState } from '../../components/common/EmptyState'
 import { ErrorState } from '../../components/common/ErrorState'
-import { Loading } from '../../components/common/Loading'
+import { PageSkeleton } from '../../components/common/Skeleton'
+import { Tooltip } from '../../components/common/Tooltip'
 import { getMonitoringSnapshot } from '../../services/endpoints/monitoring'
 import type { MonitoringSnapshot } from '../../types/monitoring'
 import type { LucideIcon } from 'lucide-react'
 
 function MetricCard({ label, value, detail, icon: Icon, tone }: { label: string; value: string | number; detail: string; icon: LucideIcon; tone: string }) {
-  return <Card className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{value}</p><p className="mt-2 text-xs text-slate-400">{detail}</p></div><span className={`rounded-xl p-2.5 ${tone}`}><Icon className="h-5 w-5" /></span></div></Card>
+  return <Card className="p-5 transition-shadow hover:shadow-card"><div className="flex items-start justify-between"><div><p className="text-sm font-semibold text-slate-500">{label}</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{value}</p><p className="mt-2 text-xs text-slate-500">{detail}</p></div><Tooltip label={detail}><span className={`rounded-xl p-2.5 ${tone}`}><Icon aria-hidden="true" className="h-5 w-5" /></span></Tooltip></div></Card>
 }
 
 function percent(value: number) { return `${Math.round(value * 100)}%` }
@@ -31,7 +32,7 @@ export function MonitoringPage() {
     finally { setLoading(false); setRefreshing(false) }
   }, [])
   useEffect(() => { void load() }, [load])
-  if (loading) return <Loading fullPage label="Loading backend metrics…" />
+  if (loading) return <PageSkeleton />
   if (error || !snapshot) return <Card className="mx-auto max-w-4xl"><ErrorState title="Monitoring unavailable" message={error || 'No monitoring snapshot was returned.'} onRetry={() => void load()} /></Card>
   const reviewTotal = snapshot.approvals + snapshot.rejections + snapshot.edits + snapshot.regenerations
   const reviewBars = [{ label: 'Approved', value: snapshot.approvals, color: 'bg-emerald-500' }, { label: 'Rejected', value: snapshot.rejections, color: 'bg-rose-500' }, { label: 'Edited', value: snapshot.edits, color: 'bg-blue-500' }, { label: 'Regenerated', value: snapshot.regenerations, color: 'bg-purple-500' }]

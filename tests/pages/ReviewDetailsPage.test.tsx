@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ReviewDetailsPage } from '../../src/pages/ReviewDetails/ReviewDetailsPage'
 import { getReview, getWorkflow, submitReview } from '../../src/services/endpoints/reviews'
 import { getTicket } from '../../src/services/endpoints/tickets'
+import { ToastProvider } from '../../src/contexts/ToastContext'
 
 vi.mock('../../src/services/endpoints/reviews', () => ({ getReview: vi.fn(), getWorkflow: vi.fn(), submitReview: vi.fn() }))
 vi.mock('../../src/services/endpoints/tickets', () => ({ getTicket: vi.fn() }))
@@ -23,15 +24,15 @@ describe('ReviewDetailsPage', () => {
   })
 
   it('loads a pending review and submits approval', async () => {
-    render(<MemoryRouter initialEntries={['/reviews/2']}><Routes><Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} /></Routes></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/reviews/2']}><ToastProvider><Routes><Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} /></Routes></ToastProvider></MemoryRouter>)
     expect(await screen.findByText('Please try these steps.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }))
     expect(submitReview).toHaveBeenCalledWith('thread-3', expect.objectContaining({ action: 'approve', reviewer: 'Hemanth' }))
-    expect(await screen.findByText(/approved successfully/i)).toBeInTheDocument()
+    expect((await screen.findAllByText(/approved successfully/i)).length).toBeGreaterThan(0)
   })
 
   it('requires comments before rejecting', async () => {
-    render(<MemoryRouter initialEntries={['/reviews/2']}><Routes><Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} /></Routes></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/reviews/2']}><ToastProvider><Routes><Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} /></Routes></ToastProvider></MemoryRouter>)
     await screen.findByText('Please try these steps.')
     await userEvent.click(screen.getByRole('button', { name: 'Reject' }))
     expect(screen.getByText(/comments are required to reject/i)).toBeInTheDocument()

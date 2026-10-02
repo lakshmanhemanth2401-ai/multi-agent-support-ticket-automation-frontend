@@ -5,10 +5,11 @@ import { normalizeWorkflow } from '../../src/services/api/workflow'
 
 describe('API helpers', () => {
   it('normalizes safe server and network errors', () => {
-    vi.spyOn(axios, 'isAxiosError').mockReturnValueOnce(false).mockReturnValueOnce(true).mockReturnValueOnce(true)
+    vi.spyOn(axios, 'isAxiosError').mockReturnValueOnce(false).mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValueOnce(true)
     expect(apiErrorMessage(new Error('private details'), 'Safe fallback')).toBe('Safe fallback')
     expect(apiErrorMessage({ response: undefined })).toMatch(/unreachable/i)
     expect(apiErrorMessage({ response: { status: 403, data: { detail: 'Permission denied' } } })).toBe('Permission denied')
+    expect(apiErrorMessage({ response: { status: 401, data: { error: { message: 'Valid authentication credentials are required' } } } })).toBe('Valid authentication credentials are required')
   })
 
   it('maps the backend workflow evidence contract to UI fields', () => {

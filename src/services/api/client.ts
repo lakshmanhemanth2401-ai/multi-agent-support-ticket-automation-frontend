@@ -12,6 +12,7 @@ export const apiClient = axios.create({
 })
 
 export function storedRefreshToken() { return sessionStorage.getItem(REFRESH_KEY) }
+export function currentAccessToken() { return accessToken }
 export function setSession(tokens: Pick<TokenPair, 'access_token' | 'refresh_token'>) { accessToken = tokens.access_token; sessionStorage.setItem(REFRESH_KEY, tokens.refresh_token) }
 export function clearSession() { accessToken = ''; sessionStorage.removeItem(REFRESH_KEY) }
 
