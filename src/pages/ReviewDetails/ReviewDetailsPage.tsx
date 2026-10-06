@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   AlertTriangle,
   BookOpenText,
@@ -34,11 +33,10 @@ import { getTicket } from "../../services/endpoints/tickets";
 import type { Review, ReviewAction, WorkflowDetail } from "../../types/review";
 import type { Ticket } from "../../types/ticket";
 import { useToast } from "../../contexts/ToastContext";
+import { apiErrorMessage } from "../../services/api/errors";
 
 function message(error: unknown) {
-  return axios.isAxiosError(error)
-    ? error.response?.data?.message || error.message
-    : "The review request failed unexpectedly.";
+  return apiErrorMessage(error, "The review request failed unexpectedly.");
 }
 function percent(value: number) {
   return `${Math.round(value * 100)}%`;
@@ -69,6 +67,7 @@ export function ReviewDetailsPage() {
       else setLoading(true);
       setError("");
       setWorkflowError("");
+      setWorkflow(null);
       try {
         const nextReview = await getReview(reviewId);
         setReview(nextReview);
@@ -103,6 +102,10 @@ export function ReviewDetailsPage() {
   async function handleAction(action: ReviewAction) {
     if (!review?.workflowThreadId) {
       setActionError("This review has no workflow thread.");
+      return;
+    }
+    if (!workflow) {
+      setActionError("This workflow is no longer available. Run ticket analysis again to create a new review workflow.");
       return;
     }
     if (!reviewer.trim()) {
@@ -163,6 +166,7 @@ export function ReviewDetailsPage() {
       </Card>
     );
   const pending = review.status === "pending";
+  const workflowAvailable = Boolean(workflow);
   const classification = workflow?.classification;
   const knowledge = workflow?.knowledge;
   const solution = workflow?.solution;
@@ -396,6 +400,11 @@ export function ReviewDetailsPage() {
             <h2 className="font-extrabold text-ink">Review decision</h2>
             {pending ? (
               <div className="mt-5 space-y-4">
+                {!workflowAvailable && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+                    Review actions are unavailable because this workflow snapshot was not restored after the backend restarted. Open ticket #{ticket.id} and run AI analysis again to create a new actionable review.
+                  </div>
+                )}
                 <Input
                   label="Reviewer"
                   value={reviewer}
@@ -423,6 +432,7 @@ export function ReviewDetailsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
+                    disabled={!workflowAvailable}
                     loading={submitting === "approve"}
                     icon={<Check className="h-4 w-4" />}
                     onClick={() => void handleAction("approve")}
@@ -430,6 +440,7 @@ export function ReviewDetailsPage() {
                     Approve
                   </Button>
                   <Button
+                    disabled={!workflowAvailable}
                     variant="secondary"
                     icon={<Edit3 className="h-4 w-4" />}
                     onClick={() => setEditing((value) => !value)}
@@ -437,6 +448,7 @@ export function ReviewDetailsPage() {
                     {editing ? "Cancel edit" : "Edit"}
                   </Button>
                   <Button
+                    disabled={!workflowAvailable}
                     variant="danger"
                     loading={submitting === "reject"}
                     icon={<X className="h-4 w-4" />}
@@ -445,6 +457,7 @@ export function ReviewDetailsPage() {
                     Reject
                   </Button>
                   <Button
+                    disabled={!workflowAvailable}
                     variant="secondary"
                     loading={submitting === "regenerate"}
                     icon={<RotateCcw className="h-4 w-4" />}
@@ -455,6 +468,7 @@ export function ReviewDetailsPage() {
                 </div>
                 {editing && (
                   <Button
+                    disabled={!workflowAvailable}
                     className="w-full"
                     loading={submitting === "edit"}
                     icon={<Send className="h-4 w-4" />}

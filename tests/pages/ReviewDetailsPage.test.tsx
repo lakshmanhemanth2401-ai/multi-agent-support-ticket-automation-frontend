@@ -38,4 +38,13 @@ describe('ReviewDetailsPage', () => {
     expect(screen.getByText(/comments are required to reject/i)).toBeInTheDocument()
     expect(submitReview).not.toHaveBeenCalled()
   })
+
+  it('keeps persisted review content visible when a restarted backend has lost the workflow snapshot', async () => {
+    vi.mocked(getWorkflow).mockRejectedValue({ isAxiosError: true, response: { status: 404, data: { detail: 'Workflow not found' } } })
+    render(<MemoryRouter initialEntries={['/reviews/2']}><ToastProvider><Routes><Route path="/reviews/:reviewId" element={<ReviewDetailsPage />} /></Routes></ToastProvider></MemoryRouter>)
+    expect(await screen.findByText('Please try these steps.')).toBeInTheDocument()
+    expect(screen.getByText('Workflow details unavailable')).toBeInTheDocument()
+    expect(screen.getByText(/workflow snapshot was not restored/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
+  })
 })
