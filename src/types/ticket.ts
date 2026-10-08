@@ -1,5 +1,6 @@
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
+export type TicketAnalysisStatus = 'not_started' | 'queued' | 'running' | 'awaiting_review' | 'completed' | 'failed'
 
 export interface Ticket {
   id: number | string
@@ -13,6 +14,9 @@ export interface Ticket {
   createdAt: string
   updatedAt?: string
   assignee?: string
+  workflowThreadId?: string | null
+  analysisStatus?: TicketAnalysisStatus
+  analysisError?: string | null
 }
 
 export interface CreateTicketPayload {

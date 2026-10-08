@@ -101,7 +101,7 @@ export function TicketDetailsPage() {
           </p>
         </section>
       </Card>
-      <AIAnalysisPanel ticketId={ticketId} />
+      <AIAnalysisPanel ticket={ticket} />
       <AuditTrail ticketId={ticketId} />
     </div>
   );

@@ -1,4 +1,4 @@
-import type { CreateTicketPayload, Ticket, TicketPriority, TicketStatus, WorkflowAnalysis } from '../../types/ticket'
+import type { CreateTicketPayload, Ticket, TicketAnalysisStatus, TicketPriority, TicketStatus, WorkflowAnalysis } from '../../types/ticket'
 import { apiClient } from '../api/client'
 import type { Page } from '../../types/pagination'
 import { normalizeWorkflow } from '../api/workflow'
@@ -13,6 +13,9 @@ interface TicketApiResponse {
   category: string | null
   created_at: string
   updated_at: string
+  workflow_thread_id?: string | null
+  analysis_status?: TicketAnalysisStatus
+  analysis_error?: string | null
 }
 
 function normalizeTicket(ticket: TicketApiResponse): Ticket {
@@ -25,6 +28,9 @@ function normalizeTicket(ticket: TicketApiResponse): Ticket {
     category: ticket.category,
     createdAt: ticket.created_at,
     updatedAt: ticket.updated_at,
+    workflowThreadId: ticket.workflow_thread_id,
+    analysisStatus: ticket.analysis_status,
+    analysisError: ticket.analysis_error,
   }
 }
 
@@ -50,5 +56,10 @@ export async function listTickets(): Promise<Ticket[]> {
 
 export async function runTicketAnalysis(ticketId: string): Promise<WorkflowAnalysis> {
   const { data } = await apiClient.post<WorkflowDetail>(`/workflows/tickets/${ticketId}`)
+  return normalizeWorkflow(data as never) as unknown as WorkflowAnalysis
+}
+
+export async function getTicketAnalysis(threadId: string): Promise<WorkflowAnalysis> {
+  const { data } = await apiClient.get<WorkflowDetail>(`/workflows/${threadId}`)
   return normalizeWorkflow(data as never) as unknown as WorkflowAnalysis
 }

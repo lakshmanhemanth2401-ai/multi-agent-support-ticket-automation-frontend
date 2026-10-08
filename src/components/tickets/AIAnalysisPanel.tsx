@@ -1,28 +1,60 @@
 import axios from 'axios'
 import { AlertTriangle, Bot, BookOpenText, CheckCircle2, Play, RotateCw, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../common/Badge'
 import { Button } from '../common/Button'
 import { Card } from '../common/Card'
 import { ErrorState } from '../common/ErrorState'
 import { Loading } from '../common/Loading'
-import { runTicketAnalysis } from '../../services/endpoints/tickets'
-import type { WorkflowAnalysis } from '../../types/ticket'
+import { getTicket, getTicketAnalysis, runTicketAnalysis } from '../../services/endpoints/tickets'
+import type { Ticket, TicketAnalysisStatus, WorkflowAnalysis } from '../../types/ticket'
 
 function asPercent(value: number) { return `${Math.round(value * 100)}%` }
 
-export function AIAnalysisPanel({ ticketId }: { ticketId: string }) {
+export function AIAnalysisPanel({ ticket }: { ticket: Ticket }) {
   const [analysis, setAnalysis] = useState<WorkflowAnalysis | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<TicketAnalysisStatus>(ticket.analysisStatus || 'not_started')
+  const [threadId, setThreadId] = useState(ticket.workflowThreadId || '')
+  const [loading, setLoading] = useState(status === 'queued' || status === 'running')
   const [error, setError] = useState('')
+  const loadCompletedAnalysis = useCallback(async (workflowThreadId: string) => {
+    setLoading(true)
+    try { setAnalysis(await getTicketAnalysis(workflowThreadId)); setError('') }
+    catch (requestError) { setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'Unable to load AI analysis.') }
+    finally { setLoading(false) }
+  }, [])
+  useEffect(() => {
+    if ((status === 'awaiting_review' || status === 'completed') && threadId && !analysis) void loadCompletedAnalysis(threadId)
+  }, [analysis, loadCompletedAnalysis, status, threadId])
+  useEffect(() => {
+    if (status !== 'queued' && status !== 'running') return
+    let active = true
+    const poll = async () => {
+      try {
+        const latest = await getTicket(String(ticket.id))
+        if (!active) return
+        const nextStatus = latest.analysisStatus || 'not_started'
+        setStatus(nextStatus); setThreadId(latest.workflowThreadId || '')
+        if (nextStatus === 'failed') { setError(latest.analysisError || 'AI analysis failed.'); setLoading(false) }
+      } catch (requestError) {
+        if (active) { setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'Unable to refresh AI processing status.'); setLoading(false) }
+      }
+    }
+    void poll()
+    const timer = window.setInterval(() => void poll(), 5000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [status, ticket.id])
   async function runAnalysis() {
     setLoading(true); setError('')
-    try { setAnalysis(await runTicketAnalysis(ticketId)) }
-    catch (requestError) { setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'AI analysis failed unexpectedly.') }
+    try { setAnalysis(await runTicketAnalysis(String(ticket.id))) }
+    catch (requestError) {
+      if (axios.isAxiosError(requestError) && requestError.response?.status === 409) { setStatus('running'); return }
+      setError(axios.isAxiosError(requestError) ? requestError.response?.data?.message || requestError.message : 'AI analysis failed unexpectedly.')
+    }
     finally { setLoading(false) }
   }
-  if (loading) return <Card className="border-indigo-100"><Loading label="Agents are classifying the ticket and retrieving knowledge…" /></Card>
+  if (loading || status === 'queued' || status === 'running') return <Card className="border-indigo-100"><Loading label="Agents are classifying the ticket and retrieving knowledge… This page updates automatically." /></Card>
   if (error) return <Card className="border-rose-100"><ErrorState title="AI analysis unavailable" message={error} onRetry={() => void runAnalysis()} /></Card>
   if (!analysis) return <Card className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60 p-6"><div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center"><div className="flex gap-4"><span className="rounded-xl bg-indigo-100 p-3 text-indigo-700"><Sparkles className="h-6 w-6" /></span><div><h2 className="font-extrabold text-ink">AI Analysis</h2><p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">Run the support workflow to classify this ticket, search ChromaDB knowledge, and generate a recommended solution.</p></div></div><Button icon={<Play className="h-4 w-4" />} onClick={() => void runAnalysis()}>Run analysis</Button></div></Card>
 
